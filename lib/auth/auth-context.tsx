@@ -102,7 +102,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       window.removeEventListener("scroll", handleActivity)
     }
     // Nota: se deja igual que tu original para no tocar comportamiento.
-  }, [user])
+  }, [user, logout])
 
   useEffect(() => {
     const initAuth = async () => {
@@ -118,14 +118,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             return
           }
 
-          const response = await fetch(
-            `${process.env.NEXT_PUBLIC_BACKEND_URL || process.env.BACKEND_URL}/api/auth/me`,
-            {
-              headers: {
-                Authorization: `Bearer ${token}`,
-              },
+          // ✅ FIX: usar ruta relativa (funciona en local y en Amplify)
+          const response = await fetch("/api/auth/me", {
+            headers: {
+              Authorization: `Bearer ${token}`,
             },
-          )
+          })
 
           if (response.ok) {
             const data = await response.json()
@@ -149,16 +147,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = useCallback(
     async (credentials: LoginCredentials) => {
       try {
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_BACKEND_URL || process.env.BACKEND_URL}/api/auth/login`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(credentials),
+        // ✅ FIX: usar ruta relativa (funciona en local y en Amplify)
+        const response = await fetch("/api/auth/login", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
           },
-        )
+          body: JSON.stringify(credentials),
+        })
 
         if (!response.ok) {
           const error = await response.json()
@@ -200,14 +196,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const token = localStorage.getItem("sagra_token")
       if (!token) return
 
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL || process.env.BACKEND_URL}/api/auth/me`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+      // ✅ FIX: usar ruta relativa (funciona en local y en Amplify)
+      const response = await fetch("/api/auth/me", {
+        headers: {
+          Authorization: `Bearer ${token}`,
         },
-      )
+      })
 
       if (response.ok) {
         const data = await response.json()
