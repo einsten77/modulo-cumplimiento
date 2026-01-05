@@ -66,7 +66,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter()
 
   useEffect(() => {
-    let timeoutId: NodeJS.Timeout
+    let timeoutId: ReturnType<typeof setTimeout>
+
 
     const resetSessionTimeout = () => {
       if (timeoutId) clearTimeout(timeoutId)
