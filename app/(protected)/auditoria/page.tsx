@@ -1,2 +1,5 @@
 import { redirect } from "next/navigation"
-export default function Page() { redirect("/auditoria/actividad-critica") }
+
+export default function AuditoriaPage() {
+  redirect("/auditoria/actividad-critica")
+}

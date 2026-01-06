@@ -5,8 +5,8 @@ export async function POST(req: Request) {
     const { username, password } = await req.json()
 
     if (username === "admin" && password === "admin") {
-      const exp = Math.floor(Date.now() / 1000) + 60 * 60 // 1 hora
-      const payload = Buffer.from(JSON.stringify({ exp })).toString("base64url")
+      const exp = Math.floor(Date.now() / 1000) + 60 * 60
+      const payload = Buffer.from(JSON.stringify({ exp })).toString("base64") // 👈 base64 normal
       const token = `devheader.${payload}.devsig`
 
       return NextResponse.json({

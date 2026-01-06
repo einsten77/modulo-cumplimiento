@@ -57,7 +57,23 @@ const ROLE_PERMISSION_FALLBACK: Partial<Record<RoleType, string[]>> = {
 }
 
 const SESSION_TIMEOUT = 30 * 60 * 1000 // 30 minutes
-const WARNING_THRESHOLD = 2 * 60 * 1000 // 2 minutes before expiration (se deja como estaba)
+const WARNING_THRESHOLD = 2 * 60 * 1000 // (se deja como estaba)
+
+/**
+ * Decodifica el payload (2do segmento) de un token tipo JWT aunque venga en base64url.
+ * Evita que atob falle por '-' '_' o por falta de padding '='.
+ */
+function decodeTokenPayload(token: string): any {
+  const parts = token.split(".")
+  if (parts.length < 2) throw new Error("Token inválido")
+
+  const base64Url = parts[1]
+  const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/")
+  const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, "=")
+
+  // atob devuelve string binario; como aquí solo hay JSON ASCII, basta con esto:
+  return JSON.parse(atob(padded))
+}
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
@@ -67,7 +83,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let timeoutId: ReturnType<typeof setTimeout>
-
 
     const resetSessionTimeout = () => {
       if (timeoutId) clearTimeout(timeoutId)
@@ -102,7 +117,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       window.removeEventListener("touchstart", handleActivity)
       window.removeEventListener("scroll", handleActivity)
     }
-    // Nota: se deja igual que tu original para no tocar comportamiento.
   }, [user, logout])
 
   useEffect(() => {
@@ -110,7 +124,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         const token = localStorage.getItem("sagra_token")
         if (token) {
-          const payload = JSON.parse(atob(token.split(".")[1]))
+          // ✅ FIX REAL: decode base64url-safe (en vez de atob directo)
+          const payload = decodeTokenPayload(token)
           const expiresAt = payload.exp * 1000
 
           if (Date.now() >= expiresAt) {
@@ -119,7 +134,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             return
           }
 
-          // ✅ FIX: usar ruta relativa (funciona en local y en Amplify)
+          // ✅ FIX: ruta relativa (funciona en local y en Amplify)
           const response = await fetch("/api/auth/me", {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -148,7 +163,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = useCallback(
     async (credentials: LoginCredentials) => {
       try {
-        // ✅ FIX: usar ruta relativa (funciona en local y en Amplify)
         const response = await fetch("/api/auth/login", {
           method: "POST",
           headers: {
@@ -197,7 +211,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const token = localStorage.getItem("sagra_token")
       if (!token) return
 
-      // ✅ FIX: usar ruta relativa (funciona en local y en Amplify)
       const response = await fetch("/api/auth/me", {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -223,7 +236,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [user])
 
-  // ✅ Cambio mínimo: fallback por rol si permissions viene vacío
   const checkPermission = useCallback(
     (permission: string): boolean => {
       if (!user) return false

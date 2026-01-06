@@ -4,11 +4,10 @@ import { Header } from "@/components/layout/header"
 import { Sidebar } from "@/components/layout/sidebar"
 import { SessionManager } from "@/components/auth/session-manager"
 
-export default function ProtectedLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export const dynamic = "force-dynamic"
+export const revalidate = 0
+
+export default function ProtectedLayout({ children }: { children: React.ReactNode }) {
   return (
     <AuthProvider>
       <SessionManager />

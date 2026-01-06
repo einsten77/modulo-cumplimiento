@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic"
+
 import Link from "next/link"
 import { ArrowLeft, AlertTriangle, Clock, AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"

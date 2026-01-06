@@ -1,8 +1,5 @@
-import type React from "react"
 import type { Metadata } from "next"
 import { Poppins } from "next/font/google"
-import { Analytics } from "@vercel/analytics/next"
-import { AuthProvider } from "@/lib/auth/auth-context"
 import "./globals.css"
 
 const poppins = Poppins({
@@ -26,17 +23,10 @@ export const metadata: Metadata = {
   },
 }
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode
-}>) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="es">
-      <body className={`${poppins.variable} font-sans antialiased`}>
-        <AuthProvider>{children}</AuthProvider>
-        <Analytics />
-      </body>
+      <body className={`${poppins.variable} font-sans antialiased`}>{children}</body>
     </html>
   )
 }
