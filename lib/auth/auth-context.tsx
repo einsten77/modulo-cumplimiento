@@ -71,7 +71,6 @@ function decodeTokenPayload(token: string): any {
   const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/")
   const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, "=")
 
-  // atob devuelve string binario; como aquí solo hay JSON ASCII, basta con esto:
   return JSON.parse(atob(padded))
 }
 
@@ -81,8 +80,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [sessionExpiresAt, setSessionExpiresAt] = useState<number | null>(null)
   const router = useRouter()
 
+  // ✅ FIX: declarar logout ANTES de cualquier useEffect que lo use
+  const logout = useCallback(() => {
+    localStorage.removeItem("sagra_token")
+    sessionStorage.clear()
+    setUser(null)
+    setSessionExpiresAt(null)
+    router.push("/login")
+  }, [router])
+
   useEffect(() => {
-    let timeoutId: ReturnType<typeof setTimeout>
+    let timeoutId: ReturnType<typeof setTimeout> | undefined
 
     const resetSessionTimeout = () => {
       if (timeoutId) clearTimeout(timeoutId)
@@ -124,7 +132,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         const token = localStorage.getItem("sagra_token")
         if (token) {
-          // ✅ FIX REAL: decode base64url-safe (en vez de atob directo)
           const payload = decodeTokenPayload(token)
           const expiresAt = payload.exp * 1000
 
@@ -134,7 +141,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             return
           }
 
-          // ✅ FIX: ruta relativa (funciona en local y en Amplify)
           const response = await fetch("/api/auth/me", {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -197,14 +203,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     },
     [router],
   )
-
-  const logout = useCallback(() => {
-    localStorage.removeItem("sagra_token")
-    sessionStorage.clear()
-    setUser(null)
-    setSessionExpiresAt(null)
-    router.push("/login")
-  }, [router])
 
   const refreshSession = useCallback(async () => {
     try {
