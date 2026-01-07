@@ -1,356 +1,158 @@
 "use client"
 
-import { useState } from "react"
-import Link from "next/link"
-import { ArrowLeft, AlertTriangle, Clock, AlertCircle, Eye, FileText } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import type { DocumentAlert } from "@/types/document"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useEffect, useMemo, useState } from "react"
+import { apiClient } from "@/lib/api/client"
 
-// Mock data
-const mockAlerts: DocumentAlert[] = [
-  {
-    id: "ALERT-001",
-    documentId: "DOC-001",
-    tipo: "vencido",
-    prioridad: "alta",
-    mensaje: "RIF de Seguros Alfa, C.A. vencido desde el 30/11/2024",
-    fechaGeneracion: "2024-12-01",
-    diasVencido: 15,
-  },
-  {
-    id: "ALERT-007",
-    documentId: "DOC-007",
-    tipo: "vencido",
-    prioridad: "alta",
-    mensaje: "Comprobante de Domicilio de Laura Sánchez vencido desde el 20/04/2024",
-    fechaGeneracion: "2024-04-21",
-    diasVencido: 235,
-  },
-  {
-    id: "ALERT-002",
-    documentId: "DOC-002",
-    tipo: "proximo_vencer",
-    prioridad: "media",
-    mensaje: "Estados Financieros de Proveedora Beta, S.A. vencen el 10/01/2025",
-    fechaGeneracion: "2024-12-10",
-    diasRestantes: 26,
-  },
-  {
-    id: "ALERT-005",
-    documentId: "DOC-005",
-    tipo: "observado",
-    prioridad: "media",
-    mensaje:
-      "Licencia SUDEASEG de Corredor Delta observada: Documento presenta fecha ilegible. Se requiere copia más clara.",
-    fechaGeneracion: "2024-11-08",
-    diasSinCorregir: 37,
-  },
-]
-
-const alertTypeConfig = {
-  vencido: {
-    label: "Documentos Vencidos",
-    description: "Requieren renovación inmediata",
-    variant: "destructive" as const,
-    icon: <AlertTriangle className="h-4 w-4" />,
-  },
-  proximo_vencer: {
-    label: "Próximos a Vencer",
-    description: "Vencen en los próximos 30 días",
-    variant: "outline" as const,
-    icon: <Clock className="h-4 w-4 text-warning" />,
-  },
-  observado: {
-    label: "Documentos Observados",
-    description: "Requieren corrección del usuario",
-    variant: "secondary" as const,
-    icon: <AlertCircle className="h-4 w-4" />,
-  },
-  rechazado: {
-    label: "Documentos Rechazados",
-    description: "Requieren nueva carga",
-    variant: "destructive" as const,
-    icon: <AlertCircle className="h-4 w-4" />,
-  },
+type SummaryResponse = {
+  TOTAL?: number
+  UNDER_REVIEW?: number
+  INCOMPLETE?: number
+  HIGH_RISK?: number
 }
 
-export default function AlertasDocumentalesPage() {
-  const [alerts, setAlerts] = useState<DocumentAlert[]>(mockAlerts)
+type Dossier = {
+  id?: string
+  name?: string
+  document?: string
+  type?: string
+  risk?: string
+  status?: string
+}
 
-  const alertasVencidos = alerts.filter((a) => a.tipo === "vencido")
-  const alertasProximosVencer = alerts.filter((a) => a.tipo === "proximo_vencer")
-  const alertasObservados = alerts.filter((a) => a.tipo === "observado")
-  const alertasRechazados = alerts.filter((a) => a.tipo === "rechazado")
+export default function AlertasPage() {
+  const [summary, setSummary] = useState<Required<SummaryResponse>>({
+    TOTAL: 0,
+    UNDER_REVIEW: 0,
+    INCOMPLETE: 0,
+    HIGH_RISK: 0,
+  })
+  const [rows, setRows] = useState<Dossier[]>([])
+  const [loading, setLoading] = useState(true)
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
-  const totalAlertas = alerts.length
-  const alertasCriticas = alertasVencidos.length + alertasRechazados.length
+  const counters = useMemo(
+    () => [
+      { title: "Total Expedientes", value: summary.TOTAL },
+      { title: "En Revisión", value: summary.UNDER_REVIEW },
+      { title: "Incompletos", value: summary.INCOMPLETE },
+      { title: "Alto Riesgo", value: summary.HIGH_RISK },
+    ],
+    [summary]
+  )
+
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true)
+      setErrorMsg(null)
+
+      try {
+        // 1) Summary
+        try {
+          const s = await apiClient.get<SummaryResponse>("/api/dossiers/summary")
+          setSummary({
+            TOTAL: s?.TOTAL ?? 0,
+            UNDER_REVIEW: s?.UNDER_REVIEW ?? 0,
+            INCOMPLETE: s?.INCOMPLETE ?? 0,
+            HIGH_RISK: s?.HIGH_RISK ?? 0,
+          })
+        } catch (e) {
+          console.warn("[v0] Summary no disponible (backend caído o 404).", e)
+          setSummary({ TOTAL: 0, UNDER_REVIEW: 0, INCOMPLETE: 0, HIGH_RISK: 0 })
+        }
+
+        // 2) Listado
+        try {
+          const list = await apiClient.get<{ items?: Dossier[] } | Dossier[]>(
+            "/api/dossiers"
+          )
+          // soporta ambos formatos: {items: []} o []
+          const items = Array.isArray(list) ? list : list?.items ?? []
+          setRows(items)
+        } catch (e) {
+          console.warn("[v0] Listado no disponible (backend caído o 404).", e)
+          setRows([])
+        }
+      } catch (e: any) {
+        // fallback ultra defensivo: no reventar
+        setErrorMsg(e?.message || "No se pudo cargar la información.")
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    load()
+  }, [])
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b border-border bg-card sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center gap-4">
-            <Link href="/">
-              <Button variant="ghost" size="icon">
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-            </Link>
-            <div>
-              <h1 className="text-2xl font-semibold text-foreground">Alertas Documentales</h1>
-              <p className="text-sm text-muted-foreground">Seguimiento de vencimientos y observaciones</p>
-            </div>
+    <div className="space-y-6">
+      {/* Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        {counters.map((c) => (
+          <div key={c.title} className="rounded-lg border p-4">
+            <p className="text-sm text-muted-foreground">{c.title}</p>
+            <p className="text-2xl font-bold">{c.value ?? 0}</p>
           </div>
+        ))}
+      </div>
+
+      {/* Tabla */}
+      <div className="rounded-lg border">
+        <div className="p-4 border-b flex items-center justify-between">
+          <h2 className="font-semibold">Listado de Expedientes</h2>
+          <button
+            type="button"
+            className="inline-flex items-center rounded-md bg-green-600 px-4 py-2 text-white text-sm font-medium hover:bg-green-700"
+            onClick={() => alert("Pendiente: crear expediente")}
+          >
+            + Nuevo Expediente
+          </button>
         </div>
-      </header>
 
-      <main className="container mx-auto px-4 py-8">
-        <div className="space-y-6">
-          {alertasCriticas > 0 && (
-            <Alert variant="destructive">
-              <AlertTriangle className="h-4 w-4" />
-              <AlertTitle>Alertas Críticas</AlertTitle>
-              <AlertDescription>
-                Hay {alertasCriticas} alertas críticas que requieren acción inmediata. Esto representa un riesgo de
-                cumplimiento regulatorio ante SUDEASEG.
-              </AlertDescription>
-            </Alert>
-          )}
-
-          <div className="grid gap-4 md:grid-cols-4">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Total de Alertas</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold">{totalAlertas}</div>
-                <p className="text-xs text-muted-foreground mt-1">Todas las categorías</p>
-              </CardContent>
-            </Card>
-
-            <Card className="border-destructive/50">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-destructive">Vencidos</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-destructive">{alertasVencidos.length}</div>
-                <p className="text-xs text-muted-foreground mt-1">Acción inmediata</p>
-              </CardContent>
-            </Card>
-
-            <Card className="border-warning/50">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-warning">Próximos a Vencer</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-warning">{alertasProximosVencer.length}</div>
-                <p className="text-xs text-muted-foreground mt-1">Próximos 30 días</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Observados</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold">{alertasObservados.length}</div>
-                <p className="text-xs text-muted-foreground mt-1">Requieren corrección</p>
-              </CardContent>
-            </Card>
+        {errorMsg ? (
+          <div className="p-6 text-sm text-red-600">{errorMsg}</div>
+        ) : loading ? (
+          <div className="p-6 text-sm text-muted-foreground">Cargando…</div>
+        ) : rows.length === 0 ? (
+          <div className="p-6 text-sm text-muted-foreground">
+            No se encontraron expedientes.
           </div>
-
-          <Tabs defaultValue="vencidos" className="space-y-4">
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="vencidos" className="gap-2">
-                <AlertTriangle className="h-4 w-4" />
-                Vencidos ({alertasVencidos.length})
-              </TabsTrigger>
-              <TabsTrigger value="proximos" className="gap-2">
-                <Clock className="h-4 w-4" />
-                Próximos ({alertasProximosVencer.length})
-              </TabsTrigger>
-              <TabsTrigger value="observados" className="gap-2">
-                <AlertCircle className="h-4 w-4" />
-                Observados ({alertasObservados.length})
-              </TabsTrigger>
-              <TabsTrigger value="rechazados" className="gap-2">
-                <AlertCircle className="h-4 w-4" />
-                Rechazados ({alertasRechazados.length})
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="vencidos" className="space-y-4">
-              <Card className="border-destructive/50">
-                <CardHeader>
-                  <CardTitle className="text-destructive">Documentos Vencidos</CardTitle>
-                  <CardDescription>Requieren renovación inmediata</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {alertasVencidos.length === 0 ? (
-                    <p className="text-center text-muted-foreground py-8">No hay documentos vencidos</p>
-                  ) : (
-                    alertasVencidos.map((alert) => (
-                      <div key={alert.id} className="p-4 rounded-lg border border-destructive/20 bg-destructive/5">
-                        <div className="flex items-start justify-between mb-2">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <FileText className="h-4 w-4 text-destructive" />
-                              <p className="font-semibold">{alert.mensaje}</p>
-                            </div>
-                            <Badge variant="destructive" className="text-xs mt-2">
-                              Vencido hace {alert.diasVencido} días
-                            </Badge>
-                          </div>
-                          <Button size="sm" variant="destructive" asChild>
-                            <Link href={`/documentos/revision/${alert.documentId}`}>
-                              <Eye className="mr-1 h-4 w-4" />
-                              Ver
-                            </Link>
-                          </Button>
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-2">
-                          Generada el {new Date(alert.fechaGeneracion).toLocaleDateString("es-VE")}
-                        </p>
-                      </div>
-                    ))
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="proximos" className="space-y-4">
-              <Card className="border-warning/50">
-                <CardHeader>
-                  <CardTitle className="text-warning">Documentos Próximos a Vencer</CardTitle>
-                  <CardDescription>Vencen en los próximos 30 días</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {alertasProximosVencer.length === 0 ? (
-                    <p className="text-center text-muted-foreground py-8">No hay documentos próximos a vencer</p>
-                  ) : (
-                    alertasProximosVencer.map((alert) => (
-                      <div key={alert.id} className="p-4 rounded-lg border border-warning/20 bg-warning/5">
-                        <div className="flex items-start justify-between mb-2">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <FileText className="h-4 w-4 text-warning" />
-                              <p className="font-semibold">{alert.mensaje}</p>
-                            </div>
-                            <Badge variant="outline" className="text-xs mt-2 border-warning text-warning">
-                              <Clock className="h-3 w-3 mr-1" />
-                              Vence en {alert.diasRestantes} días
-                            </Badge>
-                          </div>
-                          <Button size="sm" variant="outline" asChild>
-                            <Link href={`/documentos/revision/${alert.documentId}`}>
-                              <Eye className="mr-1 h-4 w-4" />
-                              Ver
-                            </Link>
-                          </Button>
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-2">
-                          Generada el {new Date(alert.fechaGeneracion).toLocaleDateString("es-VE")}
-                        </p>
-                      </div>
-                    ))
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="observados" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Documentos Observados</CardTitle>
-                  <CardDescription>Requieren corrección del usuario responsable</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {alertasObservados.length === 0 ? (
-                    <p className="text-center text-muted-foreground py-8">No hay documentos observados</p>
-                  ) : (
-                    alertasObservados.map((alert) => (
-                      <div key={alert.id} className="p-4 rounded-lg border bg-card">
-                        <div className="flex items-start justify-between mb-2">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <FileText className="h-4 w-4 text-muted-foreground" />
-                              <p className="font-semibold">{alert.mensaje}</p>
-                            </div>
-                            <Badge variant="outline" className="text-xs mt-2">
-                              <AlertCircle className="h-3 w-3 mr-1" />
-                              {alert.diasSinCorregir} días sin corregir
-                            </Badge>
-                          </div>
-                          <Button size="sm" variant="outline" asChild>
-                            <Link href={`/documentos/revision/${alert.documentId}`}>
-                              <Eye className="mr-1 h-4 w-4" />
-                              Ver
-                            </Link>
-                          </Button>
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-2">
-                          Generada el {new Date(alert.fechaGeneracion).toLocaleDateString("es-VE")}
-                        </p>
-                      </div>
-                    ))
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="rechazados" className="space-y-4">
-              <Card className="border-destructive/50">
-                <CardHeader>
-                  <CardTitle className="text-destructive">Documentos Rechazados</CardTitle>
-                  <CardDescription>Requieren nueva carga completa</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {alertasRechazados.length === 0 ? (
-                    <p className="text-center text-muted-foreground py-8">No hay documentos rechazados</p>
-                  ) : (
-                    alertasRechazados.map((alert) => (
-                      <div key={alert.id} className="p-4 rounded-lg border border-destructive/20 bg-destructive/5">
-                        <div className="flex items-start justify-between mb-2">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <FileText className="h-4 w-4 text-destructive" />
-                              <p className="font-semibold">{alert.mensaje}</p>
-                            </div>
-                          </div>
-                          <Button size="sm" variant="destructive" asChild>
-                            <Link href={`/documentos/revision/${alert.documentId}`}>
-                              <Eye className="mr-1 h-4 w-4" />
-                              Ver
-                            </Link>
-                          </Button>
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-2">
-                          Generada el {new Date(alert.fechaGeneracion).toLocaleDateString("es-VE")}
-                        </p>
-                      </div>
-                    ))
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
-
-          <div className="p-6 rounded-lg bg-muted">
-            <h3 className="font-semibold mb-3">Comportamiento de Alertas Automáticas</h3>
-            <ul className="text-sm text-muted-foreground space-y-2">
-              <li>• Las alertas se generan automáticamente 30 días antes del vencimiento</li>
-              <li>• Los documentos vencidos se marcan como críticos y requieren acción inmediata</li>
-              <li>• Las alertas de documentos observados se generan después de 7 días sin corrección</li>
-              <li>• Todas las alertas se notifican diariamente al Oficial de Cumplimiento</li>
-              <li>• El sistema genera reportes automáticos para SUDEASEG sobre documentos vencidos</li>
-              <li>• Las alertas de documentos rechazados permanecen hasta que se cargue un nuevo documento</li>
-            </ul>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="text-left">
+                <tr className="border-b">
+                  <th className="p-3">Nombre</th>
+                  <th className="p-3">Documento</th>
+                  <th className="p-3">Tipo</th>
+                  <th className="p-3">Riesgo</th>
+                  <th className="p-3">Estatus</th>
+                  <th className="p-3">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((r, idx) => (
+                  <tr key={r.id ?? idx} className="border-b">
+                    <td className="p-3">{r.name ?? "—"}</td>
+                    <td className="p-3">{r.document ?? "—"}</td>
+                    <td className="p-3">{r.type ?? "—"}</td>
+                    <td className="p-3">{r.risk ?? "—"}</td>
+                    <td className="p-3">{r.status ?? "—"}</td>
+                    <td className="p-3">
+                      <button
+                        className="text-blue-600 hover:underline"
+                        type="button"
+                        onClick={() => alert("Pendiente: ver expediente")}
+                      >
+                        Ver
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-        </div>
-      </main>
+        )}
+      </div>
     </div>
   )
 }
