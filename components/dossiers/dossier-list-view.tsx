@@ -19,7 +19,15 @@ type Dossier = {
   status?: string
 }
 
-export default function DossierListView() {
+type DossierListViewProps = {
+  /**
+   * Mantiene compatibilidad con páginas existentes que filtran por tipo:
+   * "CLIENT" | "INTERMEDIARY" | "EMPLOYEE" | "SUPPLIER" | "REINSURER" ...
+   */
+  initialSubjectType?: string
+}
+
+export function DossierListView({ initialSubjectType }: DossierListViewProps = {}) {
   const [summary, setSummary] = useState<Required<SummaryResponse>>({
     TOTAL: 0,
     UNDER_REVIEW: 0,
@@ -57,13 +65,19 @@ export default function DossierListView() {
         setSummary({ TOTAL: 0, UNDER_REVIEW: 0, INCOMPLETE: 0, HIGH_RISK: 0 })
       }
 
-      // 2) List (no romper si 404)
+      // 2) Listado (no romper si 404)
       try {
         const list = await apiClient.get<{ items?: Dossier[] } | Dossier[]>(
           "/api/dossiers"
         )
         const items = Array.isArray(list) ? list : list?.items ?? []
-        setRows(items)
+
+        // filtro opcional por tipo si viene desde páginas /dashboard/dossiers/*
+        const filtered = initialSubjectType
+          ? items.filter((x) => (x.type ?? "").toUpperCase() === initialSubjectType.toUpperCase())
+          : items
+
+        setRows(filtered)
       } catch (e) {
         console.warn("[v0] Listado no disponible, usando vacío.", e)
         setRows([])
@@ -73,11 +87,10 @@ export default function DossierListView() {
     }
 
     load()
-  }, [])
+  }, [initialSubjectType])
 
   return (
     <div className="space-y-6">
-      {/* Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {cards.map((c) => (
           <div key={c.title} className="rounded-lg border p-4">
@@ -87,7 +100,6 @@ export default function DossierListView() {
         ))}
       </div>
 
-      {/* Table */}
       <div className="rounded-lg border">
         <div className="p-4 border-b">
           <h2 className="font-semibold">Listado de Expedientes</h2>
@@ -139,3 +151,6 @@ export default function DossierListView() {
     </div>
   )
 }
+
+// ✅ Mantiene compatibilidad con imports default también
+export default DossierListView
