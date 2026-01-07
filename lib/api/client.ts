@@ -35,7 +35,7 @@ class ApiClient {
     }
 
     if (token) {
-      headers.Authorization = `Bearer ${token}`
+      ;(headers as any).Authorization = `Bearer ${token}`
     }
 
     try {
@@ -51,12 +51,26 @@ class ApiClient {
       clearTimeout(timeoutId)
 
       if (!response.ok) {
-        const error: ApiError = await response.json()
-        throw {
-          message: error.message || "Error en la solicitud",
-          status: response.status,
-          errors: error.errors,
+        // intentamos leer JSON, pero si el backend devuelve HTML/texto, no explotamos
+        let payload: any = null
+        try {
+          payload = await response.json()
+        } catch {
+          payload = null
         }
+
+        const message =
+          payload?.message ||
+          payload?.error ||
+          `Error en la solicitud (${response.status})`
+
+        const err: ApiError = {
+          message,
+          status: response.status,
+          errors: payload?.errors,
+        }
+
+        throw err
       }
 
       return response.json()
@@ -92,5 +106,23 @@ class ApiClient {
 }
 
 export const apiClient = new ApiClient({
-  baseURL: process.env.NEXT_PUBLIC_BACKEND_URL || process.env.BACKEND_URL || "http://localhost:8080",
+  // Evita que una variable placeholder en Amplify (ej: backend-placeholder.local)
+  // rompa toda la app con ERR_NAME_NOT_RESOLVED.
+  //
+  // - Si la env viene vacía o con placeholder → en PROD usamos same-origin ("")
+  //   para que al menos no falle por DNS y puedas usar rewrites/proxy.
+  // - En DEV caemos a localhost:8080.
+  baseURL: (() => {
+    const raw = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.BACKEND_URL || ""
+    const url = raw.trim().replace(/\/$/, "")
+    const isProd = process.env.NODE_ENV === "production"
+
+    const devFallback = "http://localhost:8080"
+
+    if (!url) return isProd ? "" : devFallback
+    if (url.includes("backend-placeholder")) return isProd ? "" : devFallback
+    if (url.includes("placeholder.local")) return isProd ? "" : devFallback
+
+    return url
+  })(),
 })
