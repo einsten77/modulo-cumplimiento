@@ -1,0 +1,3 @@
+export default function DecisionPage() {
+  // ... existing code here ...
+}

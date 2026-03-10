@@ -1,0 +1,30 @@
+siar:
+  auth:
+    # Modo de autenticación: LOCAL, LDAP, ACTIVE_DIRECTORY, SSO, HYBRID
+    mode: LOCAL
+    
+    # Permitir acceso ADMIN temporal (deshabilitar en producción)
+    admin-access-enabled: true
+    
+    # Dominio corporativo
+    corporate-domain: "@laoccidental.com"
+    
+    # Configuración LDAP (preparado para futura integración)
+    ldap:
+      enabled: false
+      url: ldap://localhost:389
+      base-dn: dc=laoccidental,dc=com
+      user-search-base: ou=users
+      user-search-filter: (uid={0})
+      manager-dn: cn=admin,dc=laoccidental,dc=com
+      manager-password: ${LDAP_ADMIN_PASSWORD:}
+    
+    # Configuración SSO (preparado para futura integración)
+    sso:
+      enabled: false
+      provider: SAML # SAML, OAUTH2, OIDC
+      entity-id: https://siar.laoccidental.com
+      metadata-url: ${SSO_METADATA_URL:}
+      client-id: ${SSO_CLIENT_ID:}
+      client-secret: ${SSO_CLIENT_SECRET:}
+      redirect-uri: https://siar.laoccidental.com/auth/callback

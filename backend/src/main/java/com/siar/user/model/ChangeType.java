@@ -1,0 +1,27 @@
+package com.siar.user.model;
+
+/**
+ * Tipos de cambios registrados en el historial
+ */
+public enum ChangeType {
+    USER_CREATED,
+    USER_MODIFIED,
+    USER_ACTIVATED,
+    USER_INACTIVATED,
+    USER_SUSPENDED,
+    USER_REACTIVATED,
+    ROLE_ASSIGNED,
+    ROLE_REVOKED,
+    PASSWORD_CHANGED,
+    PASSWORD_RESET,
+    STATUS_CHANGED,
+    PROFILE_UPDATED,
+    TEMPORAL_ACCESS_GRANTED,
+    TEMPORAL_ACCESS_EXTENDED,
+    TEMPORAL_ACCESS_REVOKED,
+    LOGIN_SUCCESSFUL,
+    LOGIN_FAILED,
+    LOGOUT,
+    USER_LOCKED,
+    USER_UNLOCKED
+}

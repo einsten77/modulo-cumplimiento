@@ -1,0 +1,19 @@
+export const ROLES = {
+  OFICIAL_CUMPLIMIENTO: "OFICIAL_CUMPLIMIENTO",
+  USUARIO_RRHH: "USUARIO_RRHH",
+  USUARIO_COMERCIAL: "USUARIO_COMERCIAL",
+  CONSULTOR: "CONSULTOR",
+  AUDITOR_INTERNO: "AUDITOR_INTERNO",
+  REGULADOR_SUDEASEG: "REGULADOR_SUDEASEG",
+} as const
+
+export type RoleType = (typeof ROLES)[keyof typeof ROLES]
+
+export const ROLE_LABELS: Record<RoleType, string> = {
+  OFICIAL_CUMPLIMIENTO: "Oficial de Cumplimiento",
+  USUARIO_RRHH: "Usuario RRHH",
+  USUARIO_COMERCIAL: "Usuario Comercial",
+  CONSULTOR: "Consultor",
+  AUDITOR_INTERNO: "Auditor Interno",
+  REGULADOR_SUDEASEG: "Regulador SUDEASEG",
+}
