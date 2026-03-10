@@ -1,6 +1,6 @@
 import { DashboardShell } from "@/components/dashboard/dashboard-shell"
 import { DashboardHeader } from "@/components/dashboard/dashboard-header"
-import { DossierListView } from "@/components/dossiers/dossier-list-view"
+import DossierListView from "@/components/dossiers/dossier-list-view"
 
 export default function DossiersPage() {
   return (
