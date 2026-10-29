@@ -1,158 +1,122 @@
-"use client"
+﻿"use client"
 
-import { useEffect, useMemo, useState } from "react"
-import { apiClient } from "@/lib/api/client"
+import { AlertTriangle, CalendarClock, FileWarning, ShieldAlert } from "lucide-react"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 
-type SummaryResponse = {
-  TOTAL?: number
-  UNDER_REVIEW?: number
-  INCOMPLETE?: number
-  HIGH_RISK?: number
+const alertasMock = [
+  {
+    id: 1,
+    expediente: "CLI-2024-001",
+    documento: "RIF",
+    tipo: "Vencimiento próximo",
+    detalle: "El documento vence en 10 días.",
+    nivel: "media",
+  },
+  {
+    id: 2,
+    expediente: "EMP-2024-014",
+    documento: "Cédula de identidad",
+    tipo: "Documento vencido",
+    detalle: "El documento ya se encuentra vencido.",
+    nivel: "alta",
+  },
+  {
+    id: 3,
+    expediente: "PRO-2024-008",
+    documento: "Registro mercantil",
+    tipo: "Pendiente de aprobación",
+    detalle: "Documento cargado y aún no revisado por Cumplimiento.",
+    nivel: "baja",
+  },
+]
+
+function getBadge(nivel: string) {
+  if (nivel === "alta") return <Badge variant="destructive">Alta</Badge>
+  if (nivel === "media") return <Badge variant="secondary">Media</Badge>
+  return <Badge variant="outline">Baja</Badge>
 }
 
-type Dossier = {
-  id?: string
-  name?: string
-  document?: string
-  type?: string
-  risk?: string
-  status?: string
+function getIcon(tipo: string) {
+  if (tipo === "Documento vencido") return <FileWarning className="h-4 w-4" />
+  if (tipo === "Vencimiento próximo") return <CalendarClock className="h-4 w-4" />
+  return <ShieldAlert className="h-4 w-4" />
 }
 
-export default function AlertasPage() {
-  const [summary, setSummary] = useState<Required<SummaryResponse>>({
-    TOTAL: 0,
-    UNDER_REVIEW: 0,
-    INCOMPLETE: 0,
-    HIGH_RISK: 0,
-  })
-  const [rows, setRows] = useState<Dossier[]>([])
-  const [loading, setLoading] = useState(true)
-  const [errorMsg, setErrorMsg] = useState<string | null>(null)
-
-  const counters = useMemo(
-    () => [
-      { title: "Total Expedientes", value: summary.TOTAL },
-      { title: "En Revisión", value: summary.UNDER_REVIEW },
-      { title: "Incompletos", value: summary.INCOMPLETE },
-      { title: "Alto Riesgo", value: summary.HIGH_RISK },
-    ],
-    [summary]
-  )
-
-  useEffect(() => {
-    const load = async () => {
-      setLoading(true)
-      setErrorMsg(null)
-
-      try {
-        // 1) Summary
-        try {
-          const s = await apiClient.get<SummaryResponse>("/api/dossiers/summary")
-          setSummary({
-            TOTAL: s?.TOTAL ?? 0,
-            UNDER_REVIEW: s?.UNDER_REVIEW ?? 0,
-            INCOMPLETE: s?.INCOMPLETE ?? 0,
-            HIGH_RISK: s?.HIGH_RISK ?? 0,
-          })
-        } catch (e) {
-          console.warn("[v0] Summary no disponible (backend caído o 404).", e)
-          setSummary({ TOTAL: 0, UNDER_REVIEW: 0, INCOMPLETE: 0, HIGH_RISK: 0 })
-        }
-
-        // 2) Listado
-        try {
-          const list = await apiClient.get<{ items?: Dossier[] } | Dossier[]>(
-            "/api/dossiers"
-          )
-          // soporta ambos formatos: {items: []} o []
-          const items = Array.isArray(list) ? list : list?.items ?? []
-          setRows(items)
-        } catch (e) {
-          console.warn("[v0] Listado no disponible (backend caído o 404).", e)
-          setRows([])
-        }
-      } catch (e: any) {
-        // fallback ultra defensivo: no reventar
-        setErrorMsg(e?.message || "No se pudo cargar la información.")
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    load()
-  }, [])
-
+export default function AlertasDocumentalesPage() {
   return (
-    <div className="space-y-6">
-      {/* Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        {counters.map((c) => (
-          <div key={c.title} className="rounded-lg border p-4">
-            <p className="text-sm text-muted-foreground">{c.title}</p>
-            <p className="text-2xl font-bold">{c.value ?? 0}</p>
-          </div>
-        ))}
+    <div className="space-y-6 p-6">
+      <div>
+        <h1 className="text-2xl font-semibold">Alertas de Documentos</h1>
+        <p className="text-sm text-muted-foreground">
+          Seguimiento de vencimientos, pendientes de aprobación e incidencias documentales.
+        </p>
       </div>
 
-      {/* Tabla */}
-      <div className="rounded-lg border">
-        <div className="p-4 border-b flex items-center justify-between">
-          <h2 className="font-semibold">Listado de Expedientes</h2>
-          <button
-            type="button"
-            className="inline-flex items-center rounded-md bg-green-600 px-4 py-2 text-white text-sm font-medium hover:bg-green-700"
-            onClick={() => alert("Pendiente: crear expediente")}
-          >
-            + Nuevo Expediente
-          </button>
-        </div>
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm">Documentos vencidos</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold">1</p>
+          </CardContent>
+        </Card>
 
-        {errorMsg ? (
-          <div className="p-6 text-sm text-red-600">{errorMsg}</div>
-        ) : loading ? (
-          <div className="p-6 text-sm text-muted-foreground">Cargando…</div>
-        ) : rows.length === 0 ? (
-          <div className="p-6 text-sm text-muted-foreground">
-            No se encontraron expedientes.
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="text-left">
-                <tr className="border-b">
-                  <th className="p-3">Nombre</th>
-                  <th className="p-3">Documento</th>
-                  <th className="p-3">Tipo</th>
-                  <th className="p-3">Riesgo</th>
-                  <th className="p-3">Estatus</th>
-                  <th className="p-3">Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((r, idx) => (
-                  <tr key={r.id ?? idx} className="border-b">
-                    <td className="p-3">{r.name ?? "—"}</td>
-                    <td className="p-3">{r.document ?? "—"}</td>
-                    <td className="p-3">{r.type ?? "—"}</td>
-                    <td className="p-3">{r.risk ?? "—"}</td>
-                    <td className="p-3">{r.status ?? "—"}</td>
-                    <td className="p-3">
-                      <button
-                        className="text-blue-600 hover:underline"
-                        type="button"
-                        onClick={() => alert("Pendiente: ver expediente")}
-                      >
-                        Ver
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm">Próximos a vencer</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold">1</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm">Pendientes de aprobación</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold">1</p>
+          </CardContent>
+        </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Listado de alertas</CardTitle>
+          <CardDescription>Vista operativa para control documental</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {alertasMock.map((alerta) => (
+            <div
+              key={alerta.id}
+              className="flex items-start justify-between rounded-lg border p-4"
+            >
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 font-medium">
+                  {getIcon(alerta.tipo)}
+                  <span>{alerta.tipo}</span>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Expediente: {alerta.expediente}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Documento: {alerta.documento}
+                </p>
+                <p className="text-sm">{alerta.detalle}</p>
+              </div>
+              <div>{getBadge(alerta.nivel)}</div>
+            </div>
+          ))}
+
+          {alertasMock.length === 0 && (
+            <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
+              No hay alertas documentales registradas.
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   )
 }

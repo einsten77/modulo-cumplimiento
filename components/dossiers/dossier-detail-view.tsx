@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import * as React from "react"
 import { useRouter } from "next/navigation"
@@ -44,7 +44,7 @@ export function DossierDetailView({ dossierId }: DossierDetailViewProps) {
   const [approvalDialogOpen, setApprovalDialogOpen] = React.useState(false)
   const [rejectionDialogOpen, setRejectionDialogOpen] = React.useState(false)
 
-  // Simular datos del expediente (en producción vendría de API)
+  // Simular datos del expediente (en producciÃ³n vendrÃ­a de API)
   const dossier = {
     id: dossierId,
     dossierId: "DOSS-2024-00001",
@@ -71,7 +71,7 @@ export function DossierDetailView({ dossierId }: DossierDetailViewProps) {
   const getStatusBadge = (status: string) => {
     const statusConfig = {
       INCOMPLETE: { label: "Incompleto", variant: "secondary" as const, icon: Clock },
-      UNDER_REVIEW: { label: "En Revisión", variant: "default" as const, icon: FileText },
+      UNDER_REVIEW: { label: "En RevisiÃ³n", variant: "default" as const, icon: FileText },
       REQUIRES_INFO: { label: "Requiere Info", variant: "outline" as const, icon: AlertCircle },
       OBSERVED: { label: "Observado", variant: "destructive" as const, icon: AlertTriangle },
       APPROVED: { label: "Aprobado", variant: "default" as const, icon: CheckCircle },
@@ -109,7 +109,7 @@ export function DossierDetailView({ dossierId }: DossierDetailViewProps) {
     // API call to approve
     setApprovalDialogOpen(false)
     alert("Expediente aprobado exitosamente")
-    router.push("/dossiers")
+    router.push("/expedientes")
   }
 
   const handleReject = async () => {
@@ -118,11 +118,11 @@ export function DossierDetailView({ dossierId }: DossierDetailViewProps) {
       return
     }
 
-    console.log("[v0] Rechazando expediente:", dossierId, "Razón:", rejectionReason)
+    console.log("[v0] Rechazando expediente:", dossierId, "RazÃ³n:", rejectionReason)
     // API call to reject with reason
     setRejectionDialogOpen(false)
     alert("Expediente rechazado. Se ha notificado al responsable.")
-    router.push("/dossiers")
+    router.push("/expedientes")
   }
 
   return (
@@ -137,7 +137,7 @@ export function DossierDetailView({ dossierId }: DossierDetailViewProps) {
           <p className="text-lg text-muted-foreground">{dossier.name}</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => router.push("/dossiers")}>
+          <Button variant="outline" onClick={() => router.push("/expedientes")}>
             Volver al Listado
           </Button>
           {userRole !== "AUDITOR" && userRole !== "INSPECTOR" && (
@@ -153,10 +153,10 @@ export function DossierDetailView({ dossierId }: DossierDetailViewProps) {
       {dossier.status === "UNDER_REVIEW" && canApprove && (
         <Alert>
           <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>Pendiente de Aprobación</AlertTitle>
+          <AlertTitle>Pendiente de AprobaciÃ³n</AlertTitle>
           <AlertDescription className="mt-2">
             <div className="flex items-center justify-between">
-              <span>Este expediente está listo para su revisión final y aprobación como Oficial de Cumplimiento.</span>
+              <span>Este expediente estÃ¡ listo para su revisiÃ³n final y aprobaciÃ³n como Oficial de Cumplimiento.</span>
               <div className="flex gap-2">
                 <Dialog open={rejectionDialogOpen} onOpenChange={setRejectionDialogOpen}>
                   <DialogTrigger asChild>
@@ -169,7 +169,7 @@ export function DossierDetailView({ dossierId }: DossierDetailViewProps) {
                     <DialogHeader>
                       <DialogTitle>Rechazar Expediente</DialogTitle>
                       <DialogDescription>
-                        Indique las observaciones o información faltante que requiere corrección
+                        Indique las observaciones o informaciÃ³n faltante que requiere correcciÃ³n
                       </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-2">
@@ -204,13 +204,13 @@ export function DossierDetailView({ dossierId }: DossierDetailViewProps) {
                     <DialogHeader>
                       <DialogTitle>Aprobar Expediente</DialogTitle>
                       <DialogDescription>
-                        ¿Está seguro que desea aprobar este expediente? Esta acción quedará registrada en auditoría.
+                        Â¿EstÃ¡ seguro que desea aprobar este expediente? Esta acciÃ³n quedarÃ¡ registrada en auditorÃ­a.
                       </DialogDescription>
                     </DialogHeader>
                     <Alert>
                       <Shield className="h-4 w-4" />
                       <AlertDescription>
-                        Una vez aprobado, el expediente no podrá eliminarse y los cambios futuros requerirán aprobación
+                        Una vez aprobado, el expediente no podrÃ¡ eliminarse y los cambios futuros requerirÃ¡n aprobaciÃ³n
                         previa.
                       </AlertDescription>
                     </Alert>
@@ -218,7 +218,7 @@ export function DossierDetailView({ dossierId }: DossierDetailViewProps) {
                       <Button variant="outline" onClick={() => setApprovalDialogOpen(false)}>
                         Cancelar
                       </Button>
-                      <Button onClick={handleApprove}>Confirmar Aprobación</Button>
+                      <Button onClick={handleApprove}>Confirmar AprobaciÃ³n</Button>
                     </DialogFooter>
                   </DialogContent>
                 </Dialog>
@@ -234,7 +234,7 @@ export function DossierDetailView({ dossierId }: DossierDetailViewProps) {
         <div className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Información General</CardTitle>
+              <CardTitle className="text-base">InformaciÃ³n General</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
@@ -301,7 +301,7 @@ export function DossierDetailView({ dossierId }: DossierDetailViewProps) {
               <div>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Edit className="h-4 w-4" />
-                  Última modificación
+                  Ãšltima modificaciÃ³n
                 </div>
                 <div className="mt-1 font-medium">{dossier.lastModifiedBy}</div>
                 <div className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -333,15 +333,15 @@ export function DossierDetailView({ dossierId }: DossierDetailViewProps) {
         <div className="md:col-span-2">
           <Card>
             <CardHeader>
-              <CardTitle>Información Detallada</CardTitle>
-              <CardDescription>Datos completos del expediente y documentación adjunta</CardDescription>
+              <CardTitle>InformaciÃ³n Detallada</CardTitle>
+              <CardDescription>Datos completos del expediente y documentaciÃ³n adjunta</CardDescription>
             </CardHeader>
             <CardContent>
               <Tabs defaultValue="identification" className="w-full">
                 <TabsList className="grid w-full grid-cols-5">
-                  <TabsTrigger value="identification">Identificación</TabsTrigger>
-                  <TabsTrigger value="economic">Económica</TabsTrigger>
-                  <TabsTrigger value="relationship">Relación</TabsTrigger>
+                  <TabsTrigger value="identification">IdentificaciÃ³n</TabsTrigger>
+                  <TabsTrigger value="economic">EconÃ³mica</TabsTrigger>
+                  <TabsTrigger value="relationship">RelaciÃ³n</TabsTrigger>
                   <TabsTrigger value="documents">Documentos</TabsTrigger>
                   <TabsTrigger value="history">
                     <History className="mr-1 h-4 w-4" />
@@ -352,7 +352,7 @@ export function DossierDetailView({ dossierId }: DossierDetailViewProps) {
                 <TabsContent value="identification" className="space-y-4 pt-4">
                   <div className="grid gap-4 md:grid-cols-2">
                     <div>
-                      <div className="text-sm text-muted-foreground">Razón Social</div>
+                      <div className="text-sm text-muted-foreground">RazÃ³n Social</div>
                       <div className="font-medium">{dossier.name}</div>
                     </div>
                     <div>
@@ -360,7 +360,7 @@ export function DossierDetailView({ dossierId }: DossierDetailViewProps) {
                       <div className="font-mono">{dossier.documentNumber}</div>
                     </div>
                     <div>
-                      <div className="text-sm text-muted-foreground">País</div>
+                      <div className="text-sm text-muted-foreground">PaÃ­s</div>
                       <div className="font-medium">Venezuela</div>
                     </div>
                     <div>
@@ -368,7 +368,7 @@ export function DossierDetailView({ dossierId }: DossierDetailViewProps) {
                       <div className="font-medium">Miranda</div>
                     </div>
                     <div className="col-span-2">
-                      <div className="text-sm text-muted-foreground">Dirección</div>
+                      <div className="text-sm text-muted-foreground">DirecciÃ³n</div>
                       <div className="font-medium">Av. Francisco de Miranda, Torre Empresarial, Piso 10, Chacao</div>
                     </div>
                   </div>
@@ -377,7 +377,7 @@ export function DossierDetailView({ dossierId }: DossierDetailViewProps) {
                 <TabsContent value="economic" className="space-y-4 pt-4">
                   <div className="grid gap-4 md:grid-cols-2">
                     <div>
-                      <div className="text-sm text-muted-foreground">Actividad Económica</div>
+                      <div className="text-sm text-muted-foreground">Actividad EconÃ³mica</div>
                       <div className="font-medium">Comercio</div>
                     </div>
                     <div>
@@ -387,7 +387,7 @@ export function DossierDetailView({ dossierId }: DossierDetailViewProps) {
                     <div className="col-span-2">
                       <div className="text-sm text-muted-foreground">Origen de Fondos</div>
                       <div className="font-medium">
-                        Actividad comercial de importación y distribución de equipos industriales
+                        Actividad comercial de importaciÃ³n y distribuciÃ³n de equipos industriales
                       </div>
                     </div>
                   </div>
@@ -400,12 +400,12 @@ export function DossierDetailView({ dossierId }: DossierDetailViewProps) {
                       <div className="font-medium">15/01/2024</div>
                     </div>
                     <div>
-                      <div className="text-sm text-muted-foreground">Canal de Distribución</div>
+                      <div className="text-sm text-muted-foreground">Canal de DistribuciÃ³n</div>
                       <div className="font-medium">Directo</div>
                     </div>
                     <div className="col-span-2">
                       <div className="text-sm text-muted-foreground">Productos Asociados</div>
-                      <div className="font-medium">Seguro de Transporte de Mercancías, Responsabilidad Civil</div>
+                      <div className="font-medium">Seguro de Transporte de MercancÃ­as, Responsabilidad Civil</div>
                     </div>
                   </div>
                 </TabsContent>
@@ -444,19 +444,19 @@ export function DossierDetailView({ dossierId }: DossierDetailViewProps) {
                       {
                         date: "20/01/2024 14:22",
                         user: "maria.lopez",
-                        action: "Modificó información económica",
+                        action: "ModificÃ³ informaciÃ³n econÃ³mica",
                         type: "edit",
                       },
                       {
                         date: "18/01/2024 16:30",
                         user: "ana.garcia",
-                        action: "Envió a revisión de cumplimiento",
+                        action: "EnviÃ³ a revisiÃ³n de cumplimiento",
                         type: "submit",
                       },
                       {
                         date: "15/01/2024 10:30",
                         user: "juan.perez",
-                        action: "Creó el expediente",
+                        action: "CreÃ³ el expediente",
                         type: "create",
                       },
                     ].map((event, index) => (
@@ -470,7 +470,7 @@ export function DossierDetailView({ dossierId }: DossierDetailViewProps) {
                         <div className="flex-1 pb-4">
                           <div className="font-medium">{event.action}</div>
                           <div className="text-sm text-muted-foreground">
-                            Por {event.user} • {event.date}
+                            Por {event.user} â€¢ {event.date}
                           </div>
                         </div>
                       </div>
